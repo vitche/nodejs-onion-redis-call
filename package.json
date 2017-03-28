@@ -1,0 +1,9 @@
+{
+  "name": "nodejs-onion-redis-call",
+  "version": "0.0.1",
+  "private": true,
+  "dependencies": {
+    "nodejs-onion-redis-client": "git+https://github.com/vitche/nodejs-onion-redis-client.git",
+    "uuid": "^3.0.1"
+  }
+}
