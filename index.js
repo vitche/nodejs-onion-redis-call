@@ -82,7 +82,7 @@ var server = {
                     var call = methodCalls[i];
                     if (call.identifier == result.identifier) {
                         call.callback(result.result);
-                        delete methodCalls[i];
+                        methodCalls.splice(i, 1);
                         break;
                     }
                 }
