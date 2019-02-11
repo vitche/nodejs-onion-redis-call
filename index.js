@@ -147,7 +147,10 @@ var server = {
                     connectionCallback(error);
                     return;
                 }
-                connectionCallback();
+                if (!self.publisher.connected) {
+                    connectionCallback();
+                    self.publisher.connected = true;
+                }
             });
         });
         return this;
