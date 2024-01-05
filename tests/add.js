@@ -1,24 +1,30 @@
-var OnionRedis = require('../index');
-var configuration = require('../configuration');
+const OnionRedis = require('../index');
+const configuration = require('../configuration');
 exports.testAddition = function (test) {
-    var additionService = new OnionRedis(
+    const additionService = new OnionRedis(
         configuration.onionRedis.namespaceOnionUri,
         configuration.tor.socksProxyAddress,
         function (error) {
-            if (undefined != error) {
+            if (undefined !== error) {
                 console.log(error);
                 return;
             }
-            additionService.provide('Process', function (arguments, next) {
-                var result = arguments.a + arguments.b;
+            additionService.provide('Process', function (callArguments, next) {
+                const result = callArguments.a + callArguments.b;
                 next(result);
             });
-            additionService.consume('Process', {
-                a: 7,
-                b: 11
-            }, function (result) {
-                test.equal(result, 18);
-                test.done();
-            });
+            setTimeout(() => {
+                additionService.consume('Process', {
+                    a: 7,
+                    b: 11
+                }, function (result) {
+                    test.equal(result, 18);
+                    additionService.namespace.serverInstance.listener.disconnect(() => {
+                    });
+                    additionService.namespace.serverInstance.publisher.disconnect(() => {
+                    });
+                    test.done();
+                });
+            }, 1000);
         }).Namespace('Test').Class('Add');
 };
