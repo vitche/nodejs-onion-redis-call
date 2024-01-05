@@ -19,11 +19,9 @@ exports.testAddition = function (test) {
                     b: 11
                 }, function (result) {
                     test.equal(result, 18);
-                    additionService.namespace.serverInstance.listener.disconnect(() => {
+                    additionService.disconnect(() => {
+                        test.done();
                     });
-                    additionService.namespace.serverInstance.publisher.disconnect(() => {
-                    });
-                    test.done();
                 });
             }, 1000);
         }).Namespace('Test').Class('Add');

@@ -1,23 +1,22 @@
 const uuidV4 = require('uuid/v4');
-var onionRedisClient = require('nodejs-onion-redis-client');
-var server = {
+const onionRedisClient = require('nodejs-onion-redis-client');
+const server = {
     /**
      * Экземпляр обращения к распределенному методу.
      * @constructor
      */
     Call: function (arguments) {
-        var self = this;
         this.identifier = uuidV4();
         this.arguments = arguments;
         return this;
     },
     /**
-     * Изначально предполагаем, что соединение с очередью сужествует на уровне класса, поскольку в обычном языке программирования
+     * Изначально предполагаем, что соединение с очередью существует на уровне класса, поскольку в обычном языке программирования
      * именно из классов создаются экземпляры объектов.
      * @constructor
      */
     Class: function (namespace, name) {
-        var self = this;
+        const self = this;
         self.namespace = namespace;
         self.name = name;
         self.providedMethods = {};
@@ -30,19 +29,19 @@ var server = {
          */
         self.provide = function (name, method) {
             self.providedMethods[name] = method;
-            var serverInstance = self.namespace.serverInstance;
+            const serverInstance = self.namespace.serverInstance;
             // Subscribe to call events corresponding to this method
-            var callEventName = self.getCallEventName(name);
+            const callEventName = self.getCallEventName(name);
             serverInstance.listener.on('message', function (message) {
-                if (message.channel != callEventName) {
+                if (message.channel !== callEventName) {
                     return;
                 }
-                var method = self.providedMethods[name];
-                var message = JSON.parse(message.message);
+                const method = self.providedMethods[name];
+                message = JSON.parse(message.message);
                 // Make a method call
                 method(message.arguments, function (result) {
-                    var returnEventName = self.getReturnEventName(name, message);
-                    var response = {
+                    const returnEventName = self.getReturnEventName(name, message);
+                    let response = {
                         identifier: message.identifier,
                         result: result
                     };
@@ -57,30 +56,31 @@ var server = {
          * Вызов распределенного метода.
          * @param name Имя вызываемого метода.
          * @param callArguments Данные для обращения к методу.
+         * @param callback
          */
         self.consume = function (name, callArguments, callback) {
             if (!self.consumedMethods[name]) {
                 self.consumedMethods[name] = [];
             }
-            var call = new server.Call(callArguments);
+            const call = new server.Call(callArguments);
             call.callback = callback;
             self.consumedMethods[name].push(call);
-            var serverInstance = self.namespace.serverInstance;
+            const serverInstance = self.namespace.serverInstance;
             // A call corresponding to this method
-            var callEventName = self.getCallEventName(name);
-            var request = JSON.stringify(call);
+            const callEventName = self.getCallEventName(name);
+            const request = JSON.stringify(call);
             serverInstance.publisher.publish(callEventName, request);
             // Call return corresponding to this method
-            var returnEventName = self.getReturnEventName(name, call);
+            const returnEventName = self.getReturnEventName(name, call);
             serverInstance.listener.on('message', function (message) {
-                if (message.channel != returnEventName) {
+                if (message.channel !== returnEventName) {
                     return;
                 }
-                var methodCalls = self.consumedMethods[name];
-                var result = JSON.parse(message.message);
-                for (var i = 0; i < methodCalls.length; i++) {
-                    var call = methodCalls[i];
-                    if (call.identifier == result.identifier) {
+                const methodCalls = self.consumedMethods[name];
+                const result = JSON.parse(message.message);
+                for (let i = 0; i < methodCalls.length; i++) {
+                    const call = methodCalls[i];
+                    if (call.identifier === result.identifier) {
                         call.callback(result.result);
                         methodCalls.splice(i, 1);
                         break;
@@ -95,6 +95,11 @@ var server = {
         self.getReturnEventName = function (name, call) {
             return self.namespace.name + '::' + self.name + '::' + name + '::return::' + call.identifier;
         };
+        self.disconnect = (callback) => {
+            self.namespace.serverInstance.listener.disconnect(() => {
+                self.namespace.serverInstance.publisher.disconnect(callback);
+            });
+        };
         return this;
     },
     /**
@@ -103,7 +108,7 @@ var server = {
      * @constructor
      */
     Namespace: function (serverInstance, name) {
-        var self = this;
+        const self = this;
         self.serverInstance = serverInstance;
         self.name = name;
         self.classes = {};
@@ -121,7 +126,7 @@ var server = {
      * @constructor
      */
     Server: function (uri, proxyAddress, connectionCallback) {
-        var self = this;
+        const self = this;
         this.uri = uri;
         this.proxyAddress = proxyAddress;
         this.namespaces = {};
@@ -137,13 +142,13 @@ var server = {
         self.publisher = new onionRedisClient(self.uri, self.proxyAddress);
         // Подключение принимающего канала
         self.listener.connect(function (error) {
-            if (undefined != error) {
+            if (undefined !== error) {
                 connectionCallback(error);
                 return;
             }
             // Подключение передающего канала
             self.publisher.connect(function (error) {
-                if (undefined != error) {
+                if (undefined !== error) {
                     connectionCallback(error);
                     return;
                 }
@@ -156,4 +161,5 @@ var server = {
         return this;
     }
 };
+
 module.exports = server.Server;

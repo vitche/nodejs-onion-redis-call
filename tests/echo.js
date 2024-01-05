@@ -29,11 +29,9 @@ exports.testEcho = function (test) {
                             message: '!dlrow ,olleH'
                         })
                     );
-                    echoService.namespace.serverInstance.listener.disconnect(() => {
+                    echoService.disconnect(() => {
+                        test.done();
                     });
-                    echoService.namespace.serverInstance.publisher.disconnect(() => {
-                    });
-                    test.done();
                 });
             }, 1000);
         }).Namespace('Test').Class('Echo');
